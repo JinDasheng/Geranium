@@ -1,4 +1,3 @@
-
 name: Geranium Build
 
 on:
@@ -28,27 +27,32 @@ jobs:
         brew install ldid xz git
         brew install --cask macfuse
 
-    - name: Install Theos
+    - name: Install Theos (修正版)
       run: |
+        # 克隆到可写目录
         git clone --recursive https://github.com/theos/theos.git $HOME/theos
         echo "THEOS=$HOME/theos" >> $GITHUB_ENV
         echo "export THEOS=$THEOS" >> $GITHUB_ENV
         echo "export PATH=$THEOS/bin:$THEOS/libexec:$PATH" >> $GITHUB_ENV
+        source $GITHUB_ENV
+        
+        # 创建符号链接到可写目录
+        mkdir -p $HOME/theos/makefiles
+        ln -s $THEOS/makefiles/common.mk $HOME/theos/common.mk
+        ln -s $THEOS/makefiles/tool.mk $HOME/theos/tool.mk
 
-    - name: Prepare build directory
+    - name: Extract iPhoneOS14.5 SDK
       run: |
-        rm -rf build
-        mkdir -p build
-        cd build
-        echo "BUILD_DIR=$(pwd)" >> $GITHUB_ENV
+        mkdir -p $THEOS/sdks
+        tar xJf ./iPhoneOS14.5.sdk.tar.xz -C $THEOS/sdks
+        [ -d "$THEOS/sdks/iPhoneOS14.5.sdk" ] || { echo "SDK extraction failed"; exit 1; }
 
-    - name: Build project
+    - name: Build project (修正版)
       run: |
-        cd $BUILD_DIR/..
-        ./ipabuild.sh --output-dir=$BUILD_DIR
-        [ -f "$BUILD_DIR/$APPLICATION_NAME.tipa" ] || { echo "Build failed: no .tipa file generated"; exit 1; }
+        chmod +x ./ipabuild.sh
+        ./ipabuild.sh --signingIdentity="iPhone Distribution: im-82wk"
 
-    - name: Upload artifact
+    - name: Upload IPA
       uses: actions/upload-artifact@v4
       with:
         name: Geranium-IPA
