@@ -25,7 +25,7 @@ jobs:
       - name: Extract iOS SDK
         run: |
           mkdir -p $HOME/iPhoneOS14.5.sdk
-          tar -xvf iPhoneOS14.5.sdk.zip -C iPhoneOS14.5.sdk
+          tar -xvf iPhoneOS14.5.sdk.tar.xz -C iPhoneOS14.5.sdk
           echo "SDK path: $HOME/iPhoneOS14.5.sdk"
 
       # 4️⃣ 设置环境变量（用于 CMake 编译）
