@@ -35,10 +35,10 @@ jobs:
         echo "export THEOS=$HOME/theos" >> $HOME/.bash_profile
         echo "export PATH=$THEOS/bin:$PATH" >> $HOME/.bash_profile
 
-    - name: Download iPhoneOS14.5 SDK
+    - name: Extract iPhoneOS14.5 SDK
       run: |
         mkdir -p $THEOS/sdks
-        curl -L https://github.com/theos/sdks/raw/master/iPhoneOS14.5.sdk.tar.xz | tar xJ -C $THEOS/sdks
+        tar xJf ./iPhoneOS14.5.sdk.tar.xz -C $THEOS/sdks
         [ -d "$THEOS/sdks/iPhoneOS14.5.sdk" ] || { echo "SDK extraction failed"; exit 1; }
 
     - name: Build project
