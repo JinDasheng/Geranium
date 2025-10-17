@@ -3,7 +3,7 @@ name: Build Geranium (.tipa)
 on:
   push:
     branches: [ main, master ]
-  workflow_dispatch: # 支持手动触发
+  workflow_dispatch:
 
 jobs:
   build:
@@ -14,17 +14,19 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2️⃣ 安装基础依赖 & ldid
-      - name: Install dependencies
+      # 2️⃣ 安装基础依赖 & 下载预编译 ldid
+      - name: Install dependencies and ldid
         run: |
           sudo apt-get update
-          sudo apt-get install -y git build-essential clang unzip curl perl python3 make pkg-config
+          sudo apt-get install -y curl
 
-          # 安装 ldid
-          git clone https://github.com/ProcursusTeam/ldid.git /tmp/ldid
-          cd /tmp/ldid
-          make
-          sudo cp ldid /usr/local/bin/
+          # 下载预编译 ldid
+          # curl -L -o ldid https://github.com/ProcursusTeam/ldid/releases/download/v2.1.2/ldid-x86_64-linux
+          mv ldid_linux_x86_64 ldid
+          chmod +x ldid
+          sudo mv ldid /usr/local/bin/
+
+          sudo apt-get install -y git build-essential clang unzip perl python3 make pkg-config
 
       # 3️⃣ 设置 Theos
       - name: Setup Theos
