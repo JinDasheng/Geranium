@@ -9,7 +9,7 @@ on:
 
 jobs:
   build:
-    runs-on: macos-monterey  # 指定稳定兼容的macOS 12版本
+    runs-on: macos-latest  # 指定稳定兼容的macOS 12版本
 
     steps:
     - name: Checkout with submodules
@@ -26,7 +26,7 @@ jobs:
     - name: Install dependencies
       run: |
         brew install ldid xz git
-        brew install --cask macfuse@4.3.0  # Monterey兼容版本
+        brew install --cask macfuse  # Monterey兼容版本
 
     - name: Setup Theos
       run: |
