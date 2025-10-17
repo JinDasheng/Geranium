@@ -3,66 +3,42 @@ name: Build Geranium (.tipa)
 on:
   push:
     branches: [ main, master ]
-  workflow_dispatch: # 手动触发
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ 拉取代码
-      - name: Checkout source
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2️⃣ 安装依赖工具
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential clang cmake ninja-build git unzip python3 python3-pip pkg-config \
-            libssl-dev libxml2-dev libzstd-dev liblzma-dev libbz2-dev
+          sudo apt-get install -y git build-essential clang ldid unzip curl perl python3 make
 
-      # 3️⃣ 准备 SDK
+      - name: Setup Theos
+        run: |
+          git clone --recursive https://github.com/theos/theos.git $HOME/theos
+          echo "THEOS=$HOME/theos" >> $GITHUB_ENV
+          echo "$HOME/theos/bin:$PATH" >> $GITHUB_PATH
+
       - name: Extract iOS SDK
         run: |
-          mkdir -p $HOME/iPhoneOS14.5.sdk
-          tar -xvf iPhoneOS14.5.sdk.tar.xz -C $HOME/iPhoneOS14.5.sdk
-          echo "SDK path: $HOME/iPhoneOS14.5.sdk"
+          mkdir -p $HOME/theos/sdks
+          tar -xvf iPhoneOS14.5.sdk.tar.xz -C $HOME/theos/sdks
+          ls -la $HOME/theos/sdks
 
-      # 4️⃣ 设置环境变量（用于 CMake 编译）
-      - name: Setup build environment
-        run: |
-          echo "SDKROOT=$HOME/iPhoneOS14.5.sdk/iPhoneOS14.5.sdk" >> $GITHUB_ENV
-          echo "DEVELOPER_DIR=/usr/bin" >> $GITHUB_ENV
-          echo "CC=clang" >> $GITHUB_ENV
-          echo "CXX=clang++" >> $GITHUB_ENV
-          echo "Platform=iPhoneOS" >> $GITHUB_ENV
-
-      # 5️⃣ 构建 Geranium
       - name: Build Geranium
         run: |
-          mkdir build && cd build
-          cmake .. -DCMAKE_TOOLCHAIN_FILE=../cmake/iOS.cmake \
-            -G Ninja \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_SYSTEM_NAME=iOS \
-            -DCMAKE_OSX_SYSROOT=$HOME/iPhoneOS14.5.sdk/iPhoneOS14.5.sdk \
-            -DCMAKE_OSX_ARCHITECTURES=arm64
-          ninja
+          chmod +x ./ipabuild.sh
+          ./ipabuild.sh
+        env:
+          THEOS: ${{ env.THEOS }}
 
-      # 6️⃣ 打包成 .tipa
-      - name: Package .tipa
-        run: |
-          cd build
-          mkdir -p output/Payload
-          cp -r Release/Geranium.app output/Payload/
-          cd output
-          zip -r Geranium.tipa Payload
-          mv Geranium.tipa ../../Geranium.tipa
-          cd ../..
-
-      # 7️⃣ 上传构建产物
       - name: Upload .tipa artifact
         uses: actions/upload-artifact@v4
         with:
           name: Geranium-tipa
-          path: Geranium.tipa
+          path: build/*.tipa
