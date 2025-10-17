@@ -1,5 +1,4 @@
-
-name: Geranium Build
+name: Build Geranium on macOS
 
 on:
   push:
@@ -9,45 +8,57 @@ on:
 
 jobs:
   build:
-    runs-on: macos-latest  # 指定稳定兼容的macOS 12版本
-
+    runs-on: macos-latest
+    
     steps:
-    - name: Checkout with submodules
+    - name: Checkout repository
       uses: actions/checkout@v4
       with:
-        fetch-depth: 0
-        submodules: recursive
+        fetch-depth: 0  # 需要完整克隆历史记录，因为Theos可能需要
 
-    - name: Setup Xcode 14.2
+    - name: Set up Xcode
       run: |
-        sudo xcode-select -s /Applications/Xcode_14.2.app
+        sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer
         sudo xcodebuild -license accept
 
-    - name: Install dependencies
+    - name: Install Homebrew
+      run: |
+        /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+        echo "$(brew --prefix)/opt/curl/bin" >> $GITHUB_PATH
+
+    - name: Install Theos dependencies
       run: |
         brew install ldid xz git
-        brew install --cask macfuse  # Monterey兼容版本
+        brew install --cask macfuse
 
-    - name: Setup Theos
+    - name: Install Theos
       run: |
-        export THEOS=/opt/theos
-        sudo mkdir -p $THEOS
-        sudo chown -R $USER $THEOS
         git clone --recursive https://github.com/theos/theos.git $THEOS
-        echo "THEOS=$THEOS" >> $GITHUB_ENV
+        echo "THEOS=$HOME/theos" >> $GITHUB_ENV
+        echo "export THEOS=$HOME/theos" >> $HOME/.bash_profile
+        echo "export PATH=$THEOS/bin:$PATH" >> $HOME/.bash_profile
+        source $HOME/.bash_profile
 
-    - name: Install SDK
+    - name: Install iPhoneOS14.5 SDK
       run: |
         mkdir -p $THEOS/sdks
-        curl -L https://github.com/theos/sdks/archive/master.tar.gz | tar xz -C $THEOS/sdks --strip-components=1
-        [ -d "$THEOS/sdks/iPhoneOS14.5.sdk" ] || { echo "SDK missing"; exit 1; }
+        curl -LO https://github.com/theos/sdks/archive/master.zip
+        unzip master.zip
+        mv sdks-master/*.sdk $THEOS/sdks/
+        rm -rf master.zip sdks-master
+        # 确保iPhoneOS14.5.sdk存在
+        if [ ! -d "$THEOS/sdks/iPhoneOS14.5.sdk" ]; then
+          echo "iPhoneOS14.5.sdk not found!"
+          exit 1
+        fi
 
-    - name: Build project
+    - name: Build Geranium
       run: |
         chmod +x ./ipabuild.sh
         ./ipabuild.sh
 
-    - name: Upload IPA
+    - name: Upload artifacts
+      if: success()
       uses: actions/upload-artifact@v4
       with:
         name: Geranium-IPA
