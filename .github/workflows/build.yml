@@ -3,33 +3,44 @@ name: Build Geranium (.tipa)
 on:
   push:
     branches: [ main, master ]
-  workflow_dispatch:
+  workflow_dispatch: # 支持手动触发
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
+      # 1️⃣ 拉取源码
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # 2️⃣ 安装基础依赖 & ldid
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y git build-essential clang ldid unzip curl perl python3 make
+          sudo apt-get install -y git build-essential clang unzip curl perl python3 make pkg-config
 
+          # 安装 ldid
+          git clone https://github.com/ProcursusTeam/ldid.git /tmp/ldid
+          cd /tmp/ldid
+          make
+          sudo cp ldid /usr/local/bin/
+
+      # 3️⃣ 设置 Theos
       - name: Setup Theos
         run: |
           git clone --recursive https://github.com/theos/theos.git $HOME/theos
           echo "THEOS=$HOME/theos" >> $GITHUB_ENV
           echo "$HOME/theos/bin:$PATH" >> $GITHUB_PATH
 
+      # 4️⃣ 解压 iOS SDK
       - name: Extract iOS SDK
         run: |
           mkdir -p $HOME/theos/sdks
           tar -xvf iPhoneOS14.5.sdk.tar.xz -C $HOME/theos/sdks
           ls -la $HOME/theos/sdks
 
+      # 5️⃣ 构建 Geranium
       - name: Build Geranium
         run: |
           chmod +x ./ipabuild.sh
@@ -37,6 +48,7 @@ jobs:
         env:
           THEOS: ${{ env.THEOS }}
 
+      # 6️⃣ 上传构建产物
       - name: Upload .tipa artifact
         uses: actions/upload-artifact@v4
         with:
