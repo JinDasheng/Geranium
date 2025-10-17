@@ -29,13 +29,17 @@ jobs:
 
     - name: Install Theos (修正版)
       run: |
-        git clone --recursive https://github.com/theos/theos.git $THEOS
+        # 克隆到可写目录
+        git clone --recursive https://github.com/theos/theos.git $HOME/theos
         echo "THEOS=$HOME/theos" >> $GITHUB_ENV
         echo "export THEOS=$THEOS" >> $GITHUB_ENV
         echo "export PATH=$THEOS/bin:$THEOS/libexec:$PATH" >> $GITHUB_ENV
         source $GITHUB_ENV
-        ln -s $THEOS/makefiles/common.mk $THEOS/common.mk
-        ln -s $THEOS/makefiles/tool.mk $THEOS/tool.mk
+        
+        # 创建符号链接到可写目录
+        mkdir -p $HOME/theos/makefiles
+        ln -s $THEOS/makefiles/common.mk $HOME/theos/common.mk
+        ln -s $THEOS/makefiles/tool.mk $HOME/theos/tool.mk
 
     - name: Extract iPhoneOS14.5 SDK
       run: |
@@ -46,7 +50,7 @@ jobs:
     - name: Build project (修正版)
       run: |
         chmod +x ./ipabuild.sh
-        ./ipabuild.sh --signingIdentity="iPhone Distribution: im-wk82"
+        ./ipabuild.sh --signingIdentity="iPhone Distribution: Your Team Name"
 
     - name: Upload IPA
       uses: actions/upload-artifact@v4
