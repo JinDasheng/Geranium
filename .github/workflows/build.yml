@@ -1,4 +1,5 @@
-name: Build Geranium on macOS
+
+name: Geranium Build
 
 on:
   push:
@@ -14,21 +15,15 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
       with:
-        fetch-depth: 0  # 需要完整克隆历史记录，因为Theos可能需要
+        fetch-depth: 0
         submodules: recursive
-        retry-on-error: true
 
-    - name: Set up Xcode
+    - name: Setup Xcode
       run: |
         sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer
         sudo xcodebuild -license accept
 
-    - name: Install Homebrew
-      run: |
-        /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-        echo "$(brew --prefix)/opt/curl/bin" >> $GITHUB_PATH
-
-    - name: Install Theos dependencies
+    - name: Install dependencies
       run: |
         brew install ldid xz git
         brew install --cask macfuse
@@ -39,28 +34,19 @@ jobs:
         echo "THEOS=$HOME/theos" >> $GITHUB_ENV
         echo "export THEOS=$HOME/theos" >> $HOME/.bash_profile
         echo "export PATH=$THEOS/bin:$PATH" >> $HOME/.bash_profile
-        source $HOME/.bash_profile
 
-    - name: Install iPhoneOS14.5 SDK
+    - name: Download iPhoneOS14.5 SDK
       run: |
         mkdir -p $THEOS/sdks
-        curl -LO https://github.com/theos/sdks/archive/master.zip
-        unzip master.zip
-        mv sdks-master/*.sdk $THEOS/sdks/
-        rm -rf master.zip sdks-master
-        # 确保iPhoneOS14.5.sdk存在
-        if [ ! -d "$THEOS/sdks/iPhoneOS14.5.sdk" ]; then
-          echo "iPhoneOS14.5.sdk not found!"
-          exit 1
-        fi
+        curl -L https://github.com/theos/sdks/raw/master/iPhoneOS14.5.sdk.tar.xz | tar xJ -C $THEOS/sdks
+        [ -d "$THEOS/sdks/iPhoneOS14.5.sdk" ] || { echo "SDK extraction failed"; exit 1; }
 
-    - name: Build Geranium
+    - name: Build project
       run: |
         chmod +x ./ipabuild.sh
         ./ipabuild.sh
 
-    - name: Upload artifacts
-      if: success()
+    - name: Upload IPA
       uses: actions/upload-artifact@v4
       with:
         name: Geranium-IPA
