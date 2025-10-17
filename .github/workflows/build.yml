@@ -41,8 +41,13 @@ jobs:
       - name: Build Geranium
         run: |
           mkdir build && cd build
-          cmake .. -DCMAKE_TOOLCHAIN_FILE=../cmake/iOS.cmake -GXcode
-          cmake --build . --config Release
+          cmake .. -DCMAKE_TOOLCHAIN_FILE=../cmake/iOS.cmake \
+            -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_SYSTEM_NAME=iOS \
+            -DCMAKE_OSX_SYSROOT=$HOME/iPhoneOS14.5.sdk/iPhoneOS14.5.sdk \
+            -DCMAKE_OSX_ARCHITECTURES=arm64
+          ninja
 
       # 6️⃣ 打包成 .tipa
       - name: Package .tipa
