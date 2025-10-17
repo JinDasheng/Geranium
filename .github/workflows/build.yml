@@ -1,4 +1,3 @@
-
 name: Geranium Build
 
 on:
@@ -28,12 +27,15 @@ jobs:
         brew install ldid xz git
         brew install --cask macfuse
 
-    - name: Install Theos
+    - name: Install Theos (修正版)
       run: |
         git clone --recursive https://github.com/theos/theos.git $THEOS
         echo "THEOS=$HOME/theos" >> $GITHUB_ENV
-        echo "export THEOS=$HOME/theos" >> $HOME/.bash_profile
-        echo "export PATH=$THEOS/bin:$PATH" >> $HOME/.bash_profile
+        echo "export THEOS=$THEOS" >> $GITHUB_ENV
+        echo "export PATH=$THEOS/bin:$THEOS/libexec:$PATH" >> $GITHUB_ENV
+        source $GITHUB_ENV
+        ln -s $THEOS/makefiles/common.mk $THEOS/common.mk
+        ln -s $THEOS/makefiles/tool.mk $THEOS/tool.mk
 
     - name: Extract iPhoneOS14.5 SDK
       run: |
@@ -41,10 +43,10 @@ jobs:
         tar xJf ./iPhoneOS14.5.sdk.tar.xz -C $THEOS/sdks
         [ -d "$THEOS/sdks/iPhoneOS14.5.sdk" ] || { echo "SDK extraction failed"; exit 1; }
 
-    - name: Build project
+    - name: Build project (修正版)
       run: |
         chmod +x ./ipabuild.sh
-        ./ipabuild.sh
+        ./ipabuild.sh --signingIdentity="iPhone Distribution: im-wk82"
 
     - name: Upload IPA
       uses: actions/upload-artifact@v4
